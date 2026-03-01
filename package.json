@@ -1,0 +1,39 @@
+{
+    "name": "chrome-network-monitor",
+    "version": "0.1.0",
+    "description": "Network request monitoring for Chrome extensions — intercept requests, measure latency, track bandwidth, filter by type, and export HAR-like reports for MV3.",
+    "author": "Zovo <hello@zovo.one>",
+    "license": "MIT",
+    "keywords": [
+        "chrome-extension",
+        "network",
+        "monitor",
+        "request",
+        "intercept",
+        "latency",
+        "bandwidth",
+        "har",
+        "manifest-v3",
+        "browser-extension",
+        "devtools"
+    ],
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/theluckystrike/chrome-network-monitor.git"
+    },
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "files": [
+        "dist",
+        "README.md",
+        "LICENSE"
+    ],
+    "scripts": {
+        "build": "tsc",
+        "prepublishOnly": "npm run build"
+    },
+    "devDependencies": {
+        "@types/chrome": "^0.0.260",
+        "typescript": "^5.3.3"
+    }
+}
