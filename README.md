@@ -1,84 +1,149 @@
-# chrome-network-monitor — Network Request Monitor
+# chrome-network-monitor
 
 [![npm version](https://img.shields.io/npm/v/chrome-network-monitor)](https://npmjs.com/package/chrome-network-monitor)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue.svg)](https://www.typescriptlang.org/)
-[![Chrome Web Extension](https://img.shields.io/badge/Chrome-Web%20Extension-orange.svg)](https://developer.chrome.com/docs/extensions/)
 [![CI Status](https://github.com/theluckystrike/chrome-network-monitor/actions/workflows/ci.yml/badge.svg)](https://github.com/theluckystrike/chrome-network-monitor/actions)
-[![Discord](https://img.shields.io/badge/Discord-Zovo-blueviolet.svg?logo=discord)](https://discord.gg/zovo)
-[![Website](https://img.shields.io/badge/Website-zovo.one-blue)](https://zovo.one)
-[![GitHub Stars](https://img.shields.io/github/stars/theluckystrike/chrome-network-monitor?style=social)](https://github.com/theluckystrike/chrome-network-monitor)
 
-> Track requests via webRequest API with latency, filtering by type/domain/status, stats, and export.
+Network request monitoring for Chrome extensions built on the webRequest API. Intercept requests, measure latency, filter by type or domain or status code, pull aggregate stats, and export data as JSON. Works with Manifest V3.
 
-**chrome-network-monitor** provides network request monitoring for Chrome extensions. Track requests with latency metrics, filter by type/domain/status, get statistics, and export data.
-
-Part of the [Zovo](https://zovo.one) developer tools family.
-
-## Features
-
-- ✅ **Request Tracking** - Monitor all network requests
-- ✅ **Latency Metrics** - Track request duration
-- ✅ **Filtering** - Filter by type, domain, status
-- ✅ **Statistics** - Get network statistics
-- ✅ **Export** - Export request data
-- ✅ **TypeScript Support** - Full type definitions included
-
-## Installation
+INSTALL
 
 ```bash
 npm install chrome-network-monitor
 ```
 
-## Usage
+QUICK START
 
 ```typescript
 import { NetworkMonitor } from 'chrome-network-monitor';
 
 const monitor = new NetworkMonitor().start();
 
-// Listen for requests
 monitor.onRequest((entry) => {
-  console.log(`${entry.url} ${entry.duration}ms`);
+  console.log(entry.method, entry.url, entry.duration + 'ms');
 });
-
-// Get slowest requests
-const slowest = monitor.getSlowest(10);
-
-// Get statistics
-const stats = monitor.getStats();
 ```
 
-## Contributing
+The constructor accepts an optional maxEntries parameter (default 500) that caps how many requests are kept in memory. Oldest entries are dropped first.
 
-Contributions are welcome! Please follow these steps:
+```typescript
+const monitor = new NetworkMonitor(1000).start();
+```
 
-1. **Fork** the repository
-2. **Create** a feature branch: `git checkout -b feature/network-feature`
-3. **Make** your changes
-4. **Test** your changes: `npm test`
-5. **Commit** your changes: `git commit -m 'Add new feature'`
-6. **Push** to the branch: `git push origin feature/network-feature`
-7. **Submit** a Pull Request
+API
 
-## See Also
+NetworkMonitor class
 
-### Related Zovo Repositories
+- start() - Begin listening to chrome.webRequest events. Returns the monitor instance for chaining.
+- onRequest(callback) - Register a listener that fires when a request completes. Returns an unsubscribe function.
+- getEntries() - Returns a copy of all tracked RequestEntry objects.
+- filterByType(type) - Filter entries by resource type (e.g. "xmlhttprequest", "script", "image").
+- filterByDomain(domain) - Filter entries whose URL contains the given domain string.
+- filterByStatus(min, max) - Filter entries by HTTP status code range.
+- getSlowest(count) - Returns the top N slowest requests sorted by duration. Defaults to 10.
+- getFailed() - Returns all entries with status >= 400 or status -1 (network error).
+- getStats() - Returns an object with total request count, average latency, failure count, and a breakdown by resource type.
+- clear() - Remove all stored entries.
+- export() - Serialize all entries to a formatted JSON string.
 
-- [webext-privacy-guard](https://github.com/theluckystrike/webext-privacy-guard) - Privacy utilities
-- [webext-url-parser](https://github.com/theluckystrike/webext-url-parser) - URL utilities
+RequestEntry interface
 
-### Zovo Chrome Extensions
+```typescript
+interface RequestEntry {
+  id: string;
+  url: string;
+  method: string;
+  type: string;
+  status: number;
+  startTime: number;
+  endTime: number;
+  duration: number;
+  size: number;
+  initiator: string;
+}
+```
 
-- [Zovo Tab Manager](https://chrome.google.com/webstore/detail/zovo-tab-manager) - Manage tabs efficiently
-- [Zovo Focus](https://chrome.google.com/webstore/detail/zovo-focus) - Block distractions
+EXAMPLES
 
-Visit [zovo.one](https://zovo.one) for more information.
+Filter and inspect
 
-## License
+```typescript
+// Get all failed requests
+const failed = monitor.getFailed();
 
-MIT — [Zovo](https://zovo.one)
+// Get XHR requests only
+const xhrRequests = monitor.filterByType('xmlhttprequest');
+
+// Get requests to a specific domain
+const apiCalls = monitor.filterByDomain('api.example.com');
+
+// Get requests with 5xx status codes
+const serverErrors = monitor.filterByStatus(500, 599);
+```
+
+Stats and performance
+
+```typescript
+const stats = monitor.getStats();
+// {
+//   total: 142,
+//   avgLatency: 230,
+//   failed: 3,
+//   byType: { xmlhttprequest: 45, script: 30, image: 67 }
+// }
+
+const slowest = monitor.getSlowest(5);
+```
+
+Subscribe and unsubscribe
+
+```typescript
+const unsubscribe = monitor.onRequest((entry) => {
+  if (entry.duration > 2000) {
+    console.warn('Slow request detected', entry.url);
+  }
+});
+
+// Later, stop listening
+unsubscribe();
+```
+
+Export data
+
+```typescript
+const json = monitor.export();
+// Save to file, send to server, etc.
+```
+
+PERMISSIONS
+
+Your Chrome extension manifest needs the webRequest permission and a host pattern.
+
+```json
+{
+  "permissions": ["webRequest"],
+  "host_permissions": ["<all_urls>"]
+}
+```
+
+DEVELOPMENT
+
+```bash
+git clone https://github.com/theluckystrike/chrome-network-monitor.git
+cd chrome-network-monitor
+npm install
+npm run build
+```
+
+CONTRIBUTING
+
+See CONTRIBUTING.md for guidelines on submitting issues and pull requests.
+
+LICENSE
+
+MIT. See LICENSE for the full text.
 
 ---
 
-*Built by developers, for developers. No compromises on privacy.*
+Built by theluckystrike. Part of the zovo.one ecosystem.
